@@ -33,14 +33,51 @@ int main()
 				break;
 
 			case 's':
-				size = 128;
+				size = atoi(optarg);
 				break;
 		}
+
+		if (size % 2 != 0)
+		{
+			size++;
+		}
+		while (size % 16 != 0)
+		{
+			size += 2;
+		}
+
         float * a = (float *) alligned_alloc(16, size * sizeof(float));
         float * b = (float *) alligned_alloc(16, size * sizeof(float));
         float * c = (float *) alligned_alloc(16, size * sizeof(float));
 
-		int c;
+
+		void SingleCore(float * a, float * b, float * c, int size) {
+
+			//cout << __FUNCTION__ << " " << hex << size << dec << " " << size << endl;
+			assert((size & 0x7) == 0);
+			size = size / 16;
+
+			for (int i = 0; i < size; i++) {
+				*(c++) = *(a++) + *(b++);
+				*(c++) = *(a++) + *(b++);
+				*(c++) = *(a++) + *(b++);
+				*(c++) = *(a++) + *(b++);
+				*(c++) = *(a++) + *(b++);
+				*(c++) = *(a++) + *(b++);
+				*(c++) = *(a++) + *(b++);
+				*(c++) = *(a++) + *(b++);
+				*(c++) = *(a++) + *(b++);
+				*(c++) = *(a++) + *(b++);
+				*(c++) = *(a++) + *(b++);
+				*(c++) = *(a++) + *(b++);
+				*(c++) = *(a++) + *(b++);
+				*(c++) = *(a++) + *(b++);
+				*(c++) = *(a++) + *(b++);
+				*(c++) = *(a++) + *(b++);
+			}
+		}
+
+		
 
 
     
