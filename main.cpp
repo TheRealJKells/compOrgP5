@@ -40,6 +40,7 @@ int main()
         float * b = (float *) alligned_alloc(16, size * sizeof(float));
         float * c = (float *) alligned_alloc(16, size * sizeof(float));
 
+		int c;
 
 
     
