@@ -13,11 +13,17 @@
 
 using namespace std;
 
-int main()
+void SingleCore(float * a, float * b, float * c, int size);
+float SumOfSums(float * c, int size);
+void fillArrays(float * a, float * b);
+
+
+int main(int argc, char *argv[])
 {
     int size = 128;
     int iter = 1;
 
+	int c;
     while ((c = getopt(argc, argv, "i:s:h")) != -1) {
 		switch (c) {
 			default:
@@ -50,36 +56,52 @@ int main()
         float * b = (float *) alligned_alloc(16, size * sizeof(float));
         float * c = (float *) alligned_alloc(16, size * sizeof(float));
 
-
-		void SingleCore(float * a, float * b, float * c, int size) {
-
-			//cout << __FUNCTION__ << " " << hex << size << dec << " " << size << endl;
-			assert((size & 0x7) == 0);
-			size = size / 16;
-
-			for (int i = 0; i < size; i++) {
-				*(c++) = *(a++) + *(b++);
-				*(c++) = *(a++) + *(b++);
-				*(c++) = *(a++) + *(b++);
-				*(c++) = *(a++) + *(b++);
-				*(c++) = *(a++) + *(b++);
-				*(c++) = *(a++) + *(b++);
-				*(c++) = *(a++) + *(b++);
-				*(c++) = *(a++) + *(b++);
-				*(c++) = *(a++) + *(b++);
-				*(c++) = *(a++) + *(b++);
-				*(c++) = *(a++) + *(b++);
-				*(c++) = *(a++) + *(b++);
-				*(c++) = *(a++) + *(b++);
-				*(c++) = *(a++) + *(b++);
-				*(c++) = *(a++) + *(b++);
-				*(c++) = *(a++) + *(b++);
-			}
-		}
-
-		
+		fillArrays(a, b);
 
 
+		SingleCore(a, b, c, size);
+		float totalSum = SumOfSums(c, size);
     
     return 0;
 }
+
+	void fillArrays(float * a, float * b)
+	{
+		srand(time(NULL));
+
+		for (int i = 0; i < size; i++)
+		{
+			*a[i] = rand() % 2;
+			*b[i] = rand() % 2;
+		}
+	}
+	void SingleCore(float * a, float * b, float * c, int size) {
+
+		//cout << __FUNCTION__ << " " << hex << size << dec << " " << size << endl;
+		assert((size & 0x7) == 0);
+		size = size / 16;
+
+		for (int i = 0; i < size; i++) {
+			*(c++) = *(a++) + *(b++);
+			*(c++) = *(a++) + *(b++);
+			*(c++) = *(a++) + *(b++);
+			*(c++) = *(a++) + *(b++);
+			*(c++) = *(a++) + *(b++);
+			*(c++) = *(a++) + *(b++);
+			*(c++) = *(a++) + *(b++);
+			*(c++) = *(a++) + *(b++);
+			*(c++) = *(a++) + *(b++);
+			*(c++) = *(a++) + *(b++);
+			*(c++) = *(a++) + *(b++);
+			*(c++) = *(a++) + *(b++);
+			*(c++) = *(a++) + *(b++);
+			*(c++) = *(a++) + *(b++);
+			*(c++) = *(a++) + *(b++);
+			*(c++) = *(a++) + *(b++);
+		}
+	}
+
+	float SumOfSums(float * c, int size)
+	{
+		return 0.0f;
+	}
