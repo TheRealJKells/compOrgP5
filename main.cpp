@@ -16,12 +16,18 @@ using namespace std;
 void SingleCore(float * a, float * b, float * c, int size);
 float SumOfSums(float * c, int size);
 void fillArrays(float * a, float * b, int size);
+void output(int size, int iter, float totalSum, timeval &start, timeval &otherEnd);
 
 
 int main(int argc, char *argv[])
 {
 	int size = 128;
 	int iter = 1;
+
+	timeval start;
+    timeval otherEnd;
+
+    
 
 	int d;
 	while ((d = getopt(argc, argv, "i:s:h")) != -1) {
@@ -60,9 +66,13 @@ int main(int argc, char *argv[])
 		fillArrays(a, b, size);
 
 
+        gettimeofday(&start, NULL);
 		SingleCore(a, b, c, size);
+        gettimeofday(&otherEnd, NULL);
+
 		float totalSum = SumOfSums(c, size);
 
+		output(size, iter, totalSum, start, otherEnd);
 		return 0;
 
 }
@@ -73,9 +83,26 @@ void fillArrays(float * a, float * b, int size)
 
 	for (int i = 0; i < size; i++)
 	{
-		a[i] = rand() % 2;
-		b[i] = rand() % 2;
+
+		a[i] = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+		b[i] = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+		
+
 	}
+}
+void output(int size, int iter, float totalSum, timeval &start, timeval &otherEnd)
+{
+    double realEnd = 0.0;
+    double realStart = 0.0;
+    realEnd = (otherEnd.tv_usec / 1000000.0) + otherEnd.tv_sec;
+    realStart = (start.tv_usec / 1000000.0) + start.tv_sec;
+    
+
+	cout << "Array size: " << size << " total size in MB: " << size / 100000 << endl;
+	cout << "Iterations: " << iter << endl;
+	cout << "Single core timings..." << endl;
+	cout << setprecision(10) << "Naive: " << realEnd - realStart <<  " Check: " << totalSum << endl;
+
 }
 void SingleCore(float * a, float * b, float * c, int size) {
 
@@ -105,6 +132,10 @@ void SingleCore(float * a, float * b, float * c, int size) {
 
 float SumOfSums(float * c, int size)
 {
-
-	return 0.0f;
+	float totalC = 0.0;
+	for (int i = 0; i < size; i++)
+	{
+		totalC += c[i];
+	}
+	return totalC;
 }
