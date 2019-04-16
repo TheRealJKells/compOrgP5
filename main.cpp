@@ -18,6 +18,7 @@ void Intrinsic(float * a, float * b, float * c, int size);
 float SumOfSums(float * c, int size);
 void fillArrays(float * a, float * b, int size);
 void output(int size, int iter, float totalSum, timeval &start, timeval &otherEnd);
+void neonOutput(int totalSum, timeval &start, timeval &otherEnd);
 void clearArrays(float * a, float * b, float * c, int size);
 
 
@@ -78,7 +79,9 @@ int main(int argc, char *argv[])
 		gettimeofday(&start, NULL);
 		Intrinsic(a, b, c, size);
 		gettimeofday(&otherEnd, NULL);
+		totalSum = 0;
 		totalSum = SumOfSums(c, size);
+		neonOutput(totalSum, start, otherEnd);
 		
 
 		
@@ -101,6 +104,18 @@ void fillArrays(float * a, float * b, int size)
 
 	}
 }
+
+void neonOutput(int totalSum, timeval &start, timeval &otherEnd)
+{
+	double realEnd = 0.0;
+	double realStart = 0.0;
+	realEnd = (otherEnd.tv_usec / 1000000.0) + otherEnd.tv_sec;
+    realStart = (start.tv_usec / 1000000.0) + start.tv_sec;
+
+	cout << setprecision(10) << "Neon: " << realEnd - realStart << " Check " << totalSum << endl;
+
+}
+
 void output(int size, int iter, float totalSum, timeval &start, timeval &otherEnd)
 {
     double realEnd = 0.0;
@@ -118,31 +133,28 @@ void output(int size, int iter, float totalSum, timeval &start, timeval &otherEn
 
 void clearArrays(float * a, float * b, float * c, int size)
 {
-	for (int i = 0; i < size; i++)
-	{
-		a[i] = NULL;
-		b[i] = NULL;
-		c[i] = NULL;
-	}
+	
+	a = NULL;
+	b = NULL;
+	c = NULL;
 
 }
 
 void Intrinsic(float * a, float * b, float * c, int size){
-	assert((size & 0x7) == 0);
-	size = size /4;
-
-	float32x4_t sum;
-
+	assert((size & 0xf) == 0);
+	size = size / 4;
+	
 	for (int i = 0; i < size; i ++)
 	{
-		float32x4_t A1[4] = { *(a++), *(a++), *(a++), *(a++) };
-		float32x4_t B1[4] = { *(b++), *(b++), *(b++), *(b++) };
 
-		float32x4_t C1 = vaddq_f32(A1[0], B1[0]);
-		float32x4_t C2 = vaddq_f32(A1[1], B1[1]);
-		float32x4_t C3 = vaddq_f32(A1[2], B1[2]);
-		float32x4_t C4 = vaddq_f32(A1[3], B1[3]);
-
+		float32x4_t A = { *(a++), *(a++), *(a++), *(a++) };
+		float32x4_t B = { *(b++), *(b++), *(b++), *(b++) };
+		
+		float32x4_t C1 = vaddq_f32(A, B);
+		*(c++) = C1[0];
+		*(c++) = C1[1];
+		*(c++) = C1[2];
+		*(c++) = C1[3];
 	}
 
 }
@@ -150,7 +162,7 @@ void Intrinsic(float * a, float * b, float * c, int size){
 void SingleCore(float * a, float * b, float * c, int size) {
 
 	//cout << __FUNCTION__ << " " << hex << size << dec << " " << size << endl;
-	assert((size & 0x7) == 0);
+	assert((size & 0xf) == 0);
 	size = size / 16;
 
 	for (int i = 0; i < size; i++) {
