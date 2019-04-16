@@ -18,8 +18,10 @@ void Intrinsic(float * a, float * b, float * c, int size);
 void Threading();
 float SumOfSums(float * c, int size);
 void fillArrays(float * a, float * b, int size);
-void output(int size, int iter, float totalSum, timeval &start, timeval &otherEnd);
-void neonOutput(float totalSum, timeval &start, timeval &otherEnd);
+
+void output(int size, int iter, float totalSumNaive, float totalSumNeon, 
+timeval &start, timeval &end, timeval &otherStart, timeval &otherEnd);
+// void neonOutput(float totalSum, timeval &start, timeval &otherEnd);
 void clearArrays(float * a, float * b, float * c, int size);
 
 
@@ -29,6 +31,8 @@ int main(int argc, char *argv[])
 	int iter = 1;
 
 	timeval start;
+	timeval end;
+	timeval otherStart;
     timeval otherEnd;
 
     
@@ -62,32 +66,32 @@ int main(int argc, char *argv[])
 			size += 2;
 		}
 
-
 		float * a = (float *)aligned_alloc(16, size * sizeof(float *));
 		float * b = (float *)aligned_alloc(16, size * sizeof(float *));
 		float * c = (float *)aligned_alloc(16, size * sizeof(float *));
 
 		fillArrays(a, b, size);
 
-
+		//Single core timings
+		//Naive
         gettimeofday(&start, NULL);
 		SingleCore(a, b, c, size);
-        gettimeofday(&otherEnd, NULL);
-		float totalSum = SumOfSums(c, size);
-		output(size, iter, totalSum, start, otherEnd);
+        gettimeofday(&end, NULL);
+		float totalSumNaive = SumOfSums(c, size);
 		clearArrays(a, b, c, size);
 		fillArrays(a, b, size);
-		gettimeofday(&start, NULL);
+		//Neon
+		gettimeofday(&otherStart, NULL);
 		Intrinsic(a, b, c, size);
 		gettimeofday(&otherEnd, NULL);
-		totalSum = 0;
-		totalSum = SumOfSums(c, size);
-		neonOutput(totalSum, start, otherEnd);
+		float totalSumNeon = SumOfSums(c, size);
+		output(size, iter, totalSumNaive, totalSumNeon, start, end, otherStart, otherEnd);
 		
+		//Threaded timing
+        //Naive
 
-		
+        //Neon
 
-		
 		return 0;
 
 }
@@ -106,30 +110,38 @@ void fillArrays(float * a, float * b, int size)
 	}
 }
 
-void neonOutput(float totalSum, timeval &start, timeval &otherEnd)
+// void neonOutput(float totalSum, timeval &start, timeval &otherEnd)
+// {
+// 	double realEnd = 0.0;
+// 	double realStart = 0.0;
+// 	realEnd = (end.tv_usec / 1000000.0) + end.tv_sec;
+//     realStart = (start.tv_usec / 1000000.0) + start.tv_sec;
+
+// 	cout << setprecision(10) << "Neon: " << realEnd - realStart << " Check " << totalSum << endl;
+
+// }
+
+void output(int size, int iter, float totalSumNaive, float totalSumNeon, 
+timeval &start, timeval &end, timeval &otherStart, timeval &otherEnd)
 {
-	double realEnd = 0.0;
-	double realStart = 0.0;
-	realEnd = (otherEnd.tv_usec / 1000000.0) + otherEnd.tv_sec;
-    realStart = (start.tv_usec / 1000000.0) + start.tv_sec;
+    double realEndNaive = 0.0;
+    double realStartNaive = 0.0;
+    realEndNaive = (end.tv_usec / 1000000.0) + end.tv_sec;
+    realStartNaive = (start.tv_usec / 1000000.0) + start.tv_sec;
 
-	cout << setprecision(10) << "Neon: " << realEnd - realStart << " Check " << totalSum << endl;
-
-}
-
-void output(int size, int iter, float totalSum, timeval &start, timeval &otherEnd)
-{
-    double realEnd = 0.0;
-    double realStart = 0.0;
-    realEnd = (otherEnd.tv_usec / 1000000.0) + otherEnd.tv_sec;
-    realStart = (start.tv_usec / 1000000.0) + start.tv_sec;
+	double realEndNeon = 0.0;
+    double realStartNeon = 0.0;
+    realEndNeon = (otherEnd.tv_usec / 1000000.0) + otherEnd.tv_sec;
+    realStartNeon = (otherStart.tv_usec / 1000000.0) + otherStart.tv_sec;
     
+	unsigned int n = thread::hardware_concurrency();
 
 	cout << "Array size: " << size << " total size in MB: " << size / 100000 << endl;
 	cout << "Iterations: " << iter << endl;
-	cout << "Available cores: " << hardware_concurrency() << endl;
+	cout << "Available cores: " << n << endl;
 	cout << "Single core timings..." << endl;
-	cout << setprecision(10) << "Naive: " << realEnd - realStart <<  " Check: " << totalSum << endl;
+	cout << setprecision(10) << "Naive: " << realEndNaive - realStartNaive <<  " Check: " << totalSumNaive << endl;
+	cout << setprecision(10) << "Neon: " << realEndNeon - realStartNeon << " Check " << totalSumNeon << endl;
 
 }
 
@@ -189,6 +201,12 @@ void SingleCore(float * a, float * b, float * c, int size) {
 
 void Threading()
 {
+	//After dividing size by the number of cores that result may not be a factor of 16. 
+    //Therefore, you may need to shrink size a little more of each chunk sent to each core. 
+    //If there is a remainder, one of your threads need to get a larger size than the 
+    //others to account for it.
+    int numThreads = thread::hardware_concurrency();
+    vector <std::thread> threads(numThreads);
 
 }
 
