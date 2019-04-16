@@ -18,7 +18,7 @@ void Intrinsic(float * a, float * b, float * c, int size);
 float SumOfSums(float * c, int size);
 void fillArrays(float * a, float * b, int size);
 void output(int size, int iter, float totalSum, timeval &start, timeval &otherEnd);
-void neonOutput(int totalSum, timeval &start, timeval &otherEnd);
+void neonOutput(float totalSum, timeval &start, timeval &otherEnd);
 void clearArrays(float * a, float * b, float * c, int size);
 
 
@@ -105,7 +105,7 @@ void fillArrays(float * a, float * b, int size)
 	}
 }
 
-void neonOutput(int totalSum, timeval &start, timeval &otherEnd)
+void neonOutput(float totalSum, timeval &start, timeval &otherEnd)
 {
 	double realEnd = 0.0;
 	double realStart = 0.0;
