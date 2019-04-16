@@ -14,9 +14,11 @@
 using namespace std;
 
 void SingleCore(float * a, float * b, float * c, int size);
+void Intrinsic(float * a, float * b, float * c, int size);
 float SumOfSums(float * c, int size);
 void fillArrays(float * a, float * b, int size);
 void output(int size, int iter, float totalSum, timeval &start, timeval &otherEnd);
+void clearArrays(float * a, float * b, float * c, int size);
 
 
 int main(int argc, char *argv[])
@@ -69,10 +71,19 @@ int main(int argc, char *argv[])
         gettimeofday(&start, NULL);
 		SingleCore(a, b, c, size);
         gettimeofday(&otherEnd, NULL);
-
 		float totalSum = SumOfSums(c, size);
-
 		output(size, iter, totalSum, start, otherEnd);
+		clearArrays(a, b, c, size);
+		fillArrays(a, b, size);
+		gettimeofday(&start, NULL);
+		Intrinsic(a, b, c, size);
+		gettimeofday(&otherEnd, NULL);
+		totalSum = SumOfSums(c, size);
+		
+
+		
+
+		
 		return 0;
 
 }
@@ -104,6 +115,38 @@ void output(int size, int iter, float totalSum, timeval &start, timeval &otherEn
 	cout << setprecision(10) << "Naive: " << realEnd - realStart <<  " Check: " << totalSum << endl;
 
 }
+
+void clearArrays(float * a, float * b, float * c, int size)
+{
+	for (int i = 0; i < size; i++)
+	{
+		a[i] = NULL;
+		b[i] = NULL;
+		c[i] = NULL;
+	}
+
+}
+
+void Intrinsic(float * a, float * b, float * c, int size){
+	assert((size & 0x7) == 0);
+	size = size /4;
+
+	float32x4_t sum;
+
+	for (int i = 0; i < size; i ++)
+	{
+		float32x4_t A1[4] = { *(a++), *(a++), *(a++), *(a++) };
+		float32x4_t B1[4] = { *(b++), *(b++), *(b++), *(b++) };
+
+		float32x4_t C1 = vaddq_f32(A1[0], B1[0]);
+		float32x4_t C2 = vaddq_f32(A1[1], B1[1]);
+		float32x4_t C3 = vaddq_f32(A1[2], B1[2]);
+		float32x4_t C4 = vaddq_f32(A1[3], B1[3]);
+
+	}
+
+}
+
 void SingleCore(float * a, float * b, float * c, int size) {
 
 	//cout << __FUNCTION__ << " " << hex << size << dec << " " << size << endl;
