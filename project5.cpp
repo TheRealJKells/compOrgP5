@@ -1,3 +1,10 @@
+/*Computer Organization
+Project Five
+Jordan Keller
+Dimitrije
+*/
+
+
 #include <iostream>
 #include <getopt.h>
 #include <cstdlib>
@@ -69,10 +76,12 @@ int main(int argc, char *argv[])
 			size += 2;
 		}
 
+		//three arrays
 		float * a = (float *)aligned_alloc(16, size * sizeof(float *));
 		float * b = (float *)aligned_alloc(16, size * sizeof(float *));
 		float * c = (float *)aligned_alloc(16, size * sizeof(float *));
 
+		//fill with random floats 0-1 
 		fillArrays(a, b, size);
 
 		//Single core timings
@@ -83,6 +92,7 @@ int main(int argc, char *argv[])
 		float totalSumNaive = SumOfSums(c, size);
 		clearArrays(a, b, c, size);
 		fillArrays(a, b, size);
+
 		//Neon
 		gettimeofday(&otherStart, NULL);
 		Intrinsic(a, b, c, size);
@@ -173,7 +183,7 @@ void Intrinsic(float * a, float * b, float * c, int size){
 	
 	for (int i = 0; i < size; i ++)
 	{
-
+		//4 at the time
 		float32x4_t A = { *(a++), *(a++), *(a++), *(a++) };
 		float32x4_t B = { *(b++), *(b++), *(b++), *(b++) };
 		
@@ -216,23 +226,18 @@ void SingleCore(float * a, float * b, float * c, int size) {
 //TODO
 void ThreadingNaive(float * a, float * b, float * c, int size, unsigned int cores)
 {
-	//After dividing size by the number of cores that result may not be a factor of 16. 
-    //Therefore, you may need to shrink size a little more of each chunk sent to each core. 
-    //If there is a remainder, one of your threads need to get a larger size than the 
-    //others to account for it.
 
 	vector <std::thread> threads(cores);
 	int workloadForEachCore = size / cores;
 	int actualWorkload = size / cores;
 	int remainder = 0;
 
+	//check the remainder
 	if (workloadForEachCore % 16 != 0)
 	{
 		remainder = workloadForEachCore % 16;
 	}
 
-	//tack on remainder to one of the threads
-	//if two cores
 	int f = 0;
 	for(int i =  0; i < cores; i++)
 	{
@@ -260,38 +265,30 @@ void ThreadingNaive(float * a, float * b, float * c, int size, unsigned int core
 	}
 }
 
-
-//TODO
 void ThreadingNeon(float * a, float * b, float * c, int size, unsigned int cores)
 {
-	//After dividing size by the number of cores that result may not be a factor of 16. 
-    //Therefore, you may need to shrink size a little more of each chunk sent to each core. 
-    //If there is a remainder, one of your threads need to get a larger size than the 
-    //others to account for it.
-
-	/*thread first (Intrinsic, a, b, c, size);
-
-	first.join();*/
 
     vector <std::thread> threads(cores);
 	int workloadForEachCore = size / cores;
 	int actualWorkload = size / cores;
 	int remainder = 0;
 
+	//check for remainder
 	if (workloadForEachCore % 16 != 0)
 	{
 		remainder = workloadForEachCore % 16;
 	}
 
-	//tack on remainder to one of the threads
-	//if two cores
 	int f = 0;
 	for(int i =  0; i < cores; i++)
 	{
 		if (i == 0)
 		{
+			//account for remainder
 			actualWorkload = workloadForEachCore + remainder;
 		}
+
+		//parts of a and b
 		float * workloadA = (float *)aligned_alloc(16, actualWorkload * sizeof(float *));
 		float * workloadB = (float *)aligned_alloc(16, actualWorkload * sizeof(float *));
 
@@ -306,6 +303,7 @@ void ThreadingNeon(float * a, float * b, float * c, int size, unsigned int cores
 		threads.at(i) = thread (Intrinsic, workloadA, workloadB, c, actualWorkload);
 	}
 
+	//join all threads
 	for(size_t i = 0; i < threads.size(); i++)
 	{
 		threads.at(i).join();
