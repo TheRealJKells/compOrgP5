@@ -221,13 +221,43 @@ void ThreadingNaive(float * a, float * b, float * c, int size, unsigned int core
     //If there is a remainder, one of your threads need to get a larger size than the 
     //others to account for it.
 
-	thread first (SingleCore, a, b, c, size);
+	vector <std::thread> threads(cores);
+	int workloadForEachCore = size / cores;
+	int actualWorkload = size / cores;
+	int remainder = 0;
 
-	first.join();
-	// second.join();
+	if (workloadForEachCore % 16 != 0)
+	{
+		remainder = workloadForEachCore % 16;
+	}
 
-    vector <std::thread> threads(cores);
+	//tack on remainder to one of the threads
+	//if two cores
+	int f = 0;
+	for(int i =  0; i < cores; i++)
+	{
+		if (i == 0)
+		{
+			actualWorkload = workloadForEachCore + remainder;
+		}
+		float * workloadA = (float *)aligned_alloc(16, actualWorkload * sizeof(float *));
+		float * workloadB = (float *)aligned_alloc(16, actualWorkload * sizeof(float *));
 
+		for(int j = 0; j < actualWorkload; j++)
+		{
+			workloadA[j] = a[f];
+			workloadB[j] = a[f];
+			f++;
+		}
+
+		//push it to vector threads
+		threads.at(i) = thread (SingleCore, workloadA, workloadB, c, actualWorkload);
+	}
+
+	for(size_t i = 0; i < threads.size(); i++)
+	{
+		threads.at(i).join();
+	}
 }
 
 
@@ -239,13 +269,47 @@ void ThreadingNeon(float * a, float * b, float * c, int size, unsigned int cores
     //If there is a remainder, one of your threads need to get a larger size than the 
     //others to account for it.
 
-	thread first (Intrinsic, a, b, c, size);
+	/*thread first (Intrinsic, a, b, c, size);
 
-	first.join();
-
+	first.join();*/
 
     vector <std::thread> threads(cores);
+	int workloadForEachCore = size / cores;
+	int actualWorkload = size / cores;
+	int remainder = 0;
 
+	if (workloadForEachCore % 16 != 0)
+	{
+		remainder = workloadForEachCore % 16;
+	}
+
+	//tack on remainder to one of the threads
+	//if two cores
+	int f = 0;
+	for(int i =  0; i < cores; i++)
+	{
+		if (i == 0)
+		{
+			actualWorkload = workloadForEachCore + remainder;
+		}
+		float * workloadA = (float *)aligned_alloc(16, actualWorkload * sizeof(float *));
+		float * workloadB = (float *)aligned_alloc(16, actualWorkload * sizeof(float *));
+
+		for(int j = 0; j < actualWorkload; j++)
+		{
+			workloadA[j] = a[f];
+			workloadB[j] = a[f];
+			f++;
+		}
+
+		//push it to vector threads
+		threads.at(i) = thread (Intrinsic, workloadA, workloadB, c, actualWorkload);
+	}
+
+	for(size_t i = 0; i < threads.size(); i++)
+	{
+		threads.at(i).join();
+	}
 }
 
 float SumOfSums(float * c, int size)

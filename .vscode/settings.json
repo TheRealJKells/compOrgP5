@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "cassert": "cpp"
+        "cassert": "cpp",
+        "cmath": "cpp",
+        "vector": "cpp"
     }
 }
