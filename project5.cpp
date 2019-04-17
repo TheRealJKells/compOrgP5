@@ -15,21 +15,21 @@ using namespace std;
 
 void SingleCore(float * a, float * b, float * c, int size);
 void Intrinsic(float * a, float * b, float * c, int size);
-void ThreadingNaive(float * a, float * b, float * c, int size);
-void ThreadingNeon(float * a, float * b, float * c, int size);
+void ThreadingNaive(float * a, float * b, float * c, int size, unsigned int cores);
+void ThreadingNeon(float * a, float * b, float * c, int size, unsigned int cores);
 float SumOfSums(float * c, int size);
 void fillArrays(float * a, float * b, int size);
-
-void output(int size, int iter, float totalSumNaive, float totalSumNeon, float totalSumThreadNaive, float totalSumThreadNeon,
-timeval &start, timeval &end, timeval &otherStart, timeval &otherEnd, 
-timeval &threadNaiveStart, timeval &threadNaiveEnd, timeval &threadNeonStart, timeval &threadNeonEnd);
 void clearArrays(float * a, float * b, float * c, int size);
 
+void output(int size, int iter, unsigned int cores, float totalSumNaive, float totalSumNeon, float totalSumThreadNaive, float totalSumThreadNeon,
+timeval &start, timeval &end, timeval &otherStart, timeval &otherEnd, 
+timeval &threadNaiveStart, timeval &threadNaiveEnd, timeval &threadNeonStart, timeval &threadNeonEnd);
 
 int main(int argc, char *argv[])
 {
 	int size = 128;
 	int iter = 1;
+	unsigned int cores = thread::hardware_concurrency();
 
 	timeval start;
 	timeval end;
@@ -39,8 +39,6 @@ int main(int argc, char *argv[])
 	timeval threadNaiveEnd;
 	timeval threadNeonStart;
 	timeval threadNeonEnd;
-
-    
 
 	int d;
 	while ((d = getopt(argc, argv, "i:s:h")) != -1) {
@@ -75,7 +73,6 @@ int main(int argc, char *argv[])
 		float * b = (float *)aligned_alloc(16, size * sizeof(float *));
 		float * c = (float *)aligned_alloc(16, size * sizeof(float *));
 
-		
 		fillArrays(a, b, size);
 
 		//Single core timings
@@ -92,28 +89,26 @@ int main(int argc, char *argv[])
 		gettimeofday(&otherEnd, NULL);
 		float totalSumNeon = SumOfSums(c, size);
 
+		//Threaded timings
+		//Naive
 		clearArrays(a, b, c, size);
 		fillArrays(a, b, size);
 		gettimeofday(&threadNaiveStart, NULL);
-		ThreadingNaive(a, b, c, size);
+		ThreadingNaive(a, b, c, size, cores);
 		gettimeofday(&threadNaiveEnd, NULL);
 		float totalSumThreadNaive = SumOfSums(c, size);
 
+		//Neon
 		clearArrays(a, b, c, size);
 		fillArrays(a, b, size);
 		gettimeofday(&threadNeonStart, NULL);
-		ThreadingNeon(a, b, c, size);
+		ThreadingNeon(a, b, c, size, cores);
 		gettimeofday(&threadNeonEnd, NULL);
 		float totalSumThreadNeon = SumOfSums(c, size);
 		
-		output(size, iter, totalSumNaive, totalSumNeon, totalSumThreadNaive, totalSumThreadNeon, 
+		output(size, iter, cores, totalSumNaive, totalSumNeon, totalSumThreadNaive, totalSumThreadNeon, 
 		start, end, otherStart, otherEnd, threadNaiveStart, threadNaiveEnd, threadNeonStart, threadNeonEnd);
-		
-		//Threaded timing
-        //Naive
-
-        //Neon
-
+	
 		return 0;
 
 }
@@ -124,16 +119,13 @@ void fillArrays(float * a, float * b, int size)
 
 	for (int i = 0; i < size; i++)
 	{
-
 		a[i] = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 		b[i] = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-		
-
 	}
 }
 
-void output(int size, int iter, float totalSumNaive, float totalSumNeon, float totalSumThreadNaive, 
-float totalSumThreadNeon, timeval &start, timeval &end, timeval &otherStart, 
+void output(int size, int iter, unsigned int cores, float totalSumNaive, float totalSumNeon, 
+float totalSumThreadNaive, float totalSumThreadNeon, timeval &start, timeval &end, timeval &otherStart, 
 timeval &otherEnd, timeval &threadNaiveStart, timeval &threadNaiveEnd, 
 timeval &threadNeonStart, timeval &threadNeonEnd)
 {
@@ -157,12 +149,9 @@ timeval &threadNeonStart, timeval &threadNeonEnd)
 	realEndThreadNeon = (threadNeonEnd.tv_usec / 1000000.0) + threadNeonEnd.tv_sec;
     realStartThreadNeon = (threadNeonStart.tv_usec / 1000000.0) + threadNeonStart.tv_sec;
 
-
-	unsigned int n = thread::hardware_concurrency();
-
 	cout << "Array size: " << size << " total size in MB: " << size / 100000 << endl;
 	cout << "Iterations: " << iter << endl;
-	cout << "Available cores: " << n << endl;
+	cout << "Available cores: " << cores << endl;
 	cout << "Single core timings..." << endl;
 	cout << setprecision(10) << "Naive: " << realEndNaive - realStartNaive <<  " Check: " << totalSumNaive << endl;
 	cout << setprecision(10) << "Neon: " << realEndNeon - realStartNeon << " Check " << totalSumNeon << endl;
@@ -173,11 +162,9 @@ timeval &threadNeonStart, timeval &threadNeonEnd)
 
 void clearArrays(float * a, float * b, float * c, int size)
 {
-	
 	a = NULL;
 	b = NULL;
 	c = NULL;
-
 }
 
 void Intrinsic(float * a, float * b, float * c, int size){
@@ -227,55 +214,37 @@ void SingleCore(float * a, float * b, float * c, int size) {
 
 
 //TODO
-void ThreadingNaive(float * a, float * b, float * c, int size)
+void ThreadingNaive(float * a, float * b, float * c, int size, unsigned int cores)
 {
 	//After dividing size by the number of cores that result may not be a factor of 16. 
     //Therefore, you may need to shrink size a little more of each chunk sent to each core. 
     //If there is a remainder, one of your threads need to get a larger size than the 
     //others to account for it.
+
 	thread first (SingleCore, a, b, c, size);
-	// thread second (Intrinsic, a2, b2, c2, size);
-
-
 
 	first.join();
 	// second.join();
 
-	//next two lines cause segmentation fault
-	//*totalSumThreadNaive = SumOfSums(c1, size);
-	//*totalSumThreadNeon  = SumOfSums(c2, size);
-
-
-
-    int numThreads = thread::hardware_concurrency();
-    vector <std::thread> threads(numThreads);
+    vector <std::thread> threads(cores);
 
 }
 
 
 //TODO
-void ThreadingNeon(float * a, float * b, float * c, int size)
+void ThreadingNeon(float * a, float * b, float * c, int size, unsigned int cores)
 {
 	//After dividing size by the number of cores that result may not be a factor of 16. 
     //Therefore, you may need to shrink size a little more of each chunk sent to each core. 
     //If there is a remainder, one of your threads need to get a larger size than the 
     //others to account for it.
+
 	thread first (Intrinsic, a, b, c, size);
-	// thread second (Intrinsic, a2, b2, c2, size);
-
-
 
 	first.join();
-	// second.join();
-
-	//next two lines cause segmentation fault
-	//*totalSumThreadNaive = SumOfSums(c1, size);
-	//*totalSumThreadNeon  = SumOfSums(c2, size);
 
 
-
-    int numThreads = thread::hardware_concurrency();
-    vector <std::thread> threads(numThreads);
+    vector <std::thread> threads(cores);
 
 }
 
