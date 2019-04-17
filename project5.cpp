@@ -22,6 +22,8 @@ using namespace std;
 
 void SingleCore(float * a, float * b, float * c, int size);
 void Intrinsic(float * a, float * b, float * c, int size);
+void joinThreadNaive();
+void joinThreadNeon();
 void ThreadingNaive(float * a, float * b, float * c, int size, unsigned int cores);
 void ThreadingNeon(float * a, float * b, float * c, int size, unsigned int cores);
 float SumOfSums(float * c, int size);
@@ -31,6 +33,9 @@ void clearArrays(float * a, float * b, float * c, int size);
 void output(int size, int iter, unsigned int cores, float totalSumNaive, float totalSumNeon, float totalSumThreadNaive, float totalSumThreadNeon,
 timeval &start, timeval &end, timeval &otherStart, timeval &otherEnd, 
 timeval &threadNaiveStart, timeval &threadNaiveEnd, timeval &threadNeonStart, timeval &threadNeonEnd);
+
+vector<std::thread> tNeon(thread::hardware_concurrency());
+vector<std::thread> tNaive(thread::hardware_concurrency());
 
 int main(int argc, char *argv[])
 {
@@ -103,16 +108,18 @@ int main(int argc, char *argv[])
 		//Naive
 		clearArrays(a, b, c, size);
 		fillArrays(a, b, size);
-		gettimeofday(&threadNaiveStart, NULL);
 		ThreadingNaive(a, b, c, size, cores);
+		gettimeofday(&threadNaiveStart, NULL);
+		joinThreadNaive();
 		gettimeofday(&threadNaiveEnd, NULL);
 		float totalSumThreadNaive = SumOfSums(c, size);
 
 		//Neon
 		clearArrays(a, b, c, size);
 		fillArrays(a, b, size);
-		gettimeofday(&threadNeonStart, NULL);
 		ThreadingNeon(a, b, c, size, cores);
+		gettimeofday(&threadNeonStart, NULL);
+		joinThreadNeon();
 		gettimeofday(&threadNeonEnd, NULL);
 		float totalSumThreadNeon = SumOfSums(c, size);
 		
@@ -222,10 +229,25 @@ void SingleCore(float * a, float * b, float * c, int size) {
 	}
 }
 
+void joinThreadNaive()
+{
+	for (size_t i = 0; i < tNaive.size(); i++)
+	{
+		tNaive.at(i).join();
+	}
+}
 
-//TODO
+void joinThreadNeon()
+{
+	for (size_t i = 0; i < tNeon.size(); i++)
+	{
+		tNeon.at(i).join();
+	}
+}
+
 void ThreadingNaive(float * a, float * b, float * c, int size, unsigned int cores)
 {
+
 
 	vector <std::thread> threads(cores);
 	int workloadForEachCore = size / cores;
@@ -251,24 +273,20 @@ void ThreadingNaive(float * a, float * b, float * c, int size, unsigned int core
 		for(int j = 0; j < actualWorkload; j++)
 		{
 			workloadA[j] = a[f];
-			workloadB[j] = a[f];
+			workloadB[j] = b[f];
 			f++;
 		}
 
 		//push it to vector threads
-		threads.at(i) = thread (SingleCore, workloadA, workloadB, c, actualWorkload);
+		tNaive.at(i) = thread (SingleCore, workloadA, workloadB, c, actualWorkload);
 	}
 
-	for(size_t i = 0; i < threads.size(); i++)
-	{
-		threads.at(i).join();
-	}
+	
 }
 
 void ThreadingNeon(float * a, float * b, float * c, int size, unsigned int cores)
 {
 
-    vector <std::thread> threads(cores);
 	int workloadForEachCore = size / cores;
 	int actualWorkload = size / cores;
 	int remainder = 0;
@@ -295,19 +313,14 @@ void ThreadingNeon(float * a, float * b, float * c, int size, unsigned int cores
 		for(int j = 0; j < actualWorkload; j++)
 		{
 			workloadA[j] = a[f];
-			workloadB[j] = a[f];
+			workloadB[j] = b[f];
 			f++;
 		}
 
 		//push it to vector threads
-		threads.at(i) = thread (Intrinsic, workloadA, workloadB, c, actualWorkload);
+		tNeon.at(i) = thread (Intrinsic, workloadA, workloadB, c, actualWorkload);
 	}
 
-	//join all threads
-	for(size_t i = 0; i < threads.size(); i++)
-	{
-		threads.at(i).join();
-	}
 }
 
 float SumOfSums(float * c, int size)
