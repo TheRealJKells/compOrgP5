@@ -28,7 +28,7 @@ void ThreadingNaive(float * a, float * b, float * c, int size, unsigned int core
 void ThreadingNeon(float * a, float * b, float * c, int size, unsigned int cores);
 float SumOfSums(float * c, int size);
 void fillArrays(float * a, float * b, int size);
-void clearArrays(float * a, float * b, float * c, int size);
+void clearCArray(float * c);
 
 void output(int size, int iter, unsigned int cores, float totalSumNaive, float totalSumNeon, float totalSumThreadNaive, float totalSumThreadNeon,
 timeval &start, timeval &end, timeval &otherStart, timeval &otherEnd, 
@@ -95,8 +95,7 @@ int main(int argc, char *argv[])
 		SingleCore(a, b, c, size);
         gettimeofday(&end, NULL);
 		float totalSumNaive = SumOfSums(c, size);
-		clearArrays(a, b, c, size);
-		fillArrays(a, b, size);
+		clearCArray(c);
 
 		//Neon
 		gettimeofday(&otherStart, NULL);
@@ -106,8 +105,8 @@ int main(int argc, char *argv[])
 
 		//Threaded timings
 		//Naive
-		clearArrays(a, b, c, size);
-		fillArrays(a, b, size);
+		clearCArray(c);
+		//fillArrays(a, b, size);
 		ThreadingNaive(a, b, c, size, cores);
 		gettimeofday(&threadNaiveStart, NULL);
 		joinThreadNaive();
@@ -115,8 +114,8 @@ int main(int argc, char *argv[])
 		float totalSumThreadNaive = SumOfSums(c, size);
 
 		//Neon
-		clearArrays(a, b, c, size);
-		fillArrays(a, b, size);
+		clearCArray(c);
+		//fillArrays(a, b, size);
 		ThreadingNeon(a, b, c, size, cores);
 		gettimeofday(&threadNeonStart, NULL);
 		joinThreadNeon();
@@ -177,10 +176,8 @@ timeval &threadNeonStart, timeval &threadNeonEnd)
 	cout << setprecision(10) << "Neon: " << realEndThreadNeon - realStartThreadNeon << " Check " << totalSumThreadNeon << endl;
 }
 
-void clearArrays(float * a, float * b, float * c, int size)
+void clearCArray(float * c)
 {
-	a = NULL;
-	b = NULL;
 	c = NULL;
 }
 
@@ -261,7 +258,7 @@ void ThreadingNaive(float * a, float * b, float * c, int size, unsigned int core
 	}
 
 	int f = 0;
-	for(int i =  0; i < cores; i++)
+	for(unsigned int i =  0; i < cores; i++)
 	{
 		if (i == 0)
 		{
@@ -298,7 +295,7 @@ void ThreadingNeon(float * a, float * b, float * c, int size, unsigned int cores
 	}
 
 	int f = 0;
-	for(int i =  0; i < cores; i++)
+	for(unsigned int i =  0; i < cores; i++)
 	{
 		if (i == 0)
 		{
